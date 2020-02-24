@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/bash -l
 
-basename='c.stuff'
+basename="$HOME/.passman.enc"
 openssl_enc="openssl enc -aes256 -pbkdf2 -pass pass:\"\$p\" > $basename"
 openssl_dec="openssl enc -d -aes256 -pbkdf2 -in $basename -pass pass:\$p 2>/dev/null"
 ok='1'
@@ -51,7 +51,7 @@ printhelp(){
     echo ""
 }
 
-test -f $basename && readbase || newbase
+test -f "$basename" && readbase || newbase
 printhelp
 
 while : ; do
@@ -94,8 +94,6 @@ while : ; do
             testm=`echo "$test" | grep "^$name "`
             if [ -n "$testm" ] &&  [ -n "$name" ]; then
                 test=`echo "$test" | grep -v "^$name "`
-#		[ -n "$test" ] && echo "$test" | openssl enc -aes256 -pbkdf2 -pass pass:"$p" > $basename
-
 		[ -n "$test" ] && echo "$test" | eval "$openssl_enc"
 	        echo "deleted item $name"
 	    fi
