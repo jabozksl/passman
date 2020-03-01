@@ -43,7 +43,7 @@ printhelp(){
     echo "[h]elp"
     echo "[c]reate - create new database"
     echo "[n]ew master password"
-    echo "[s]how - show item"
+    echo "[s]earch"
     echo "[l]ist or [p]rint all items"
     echo "[a]dd or change item"
     echo "[d]elete item"
@@ -71,8 +71,8 @@ while : ; do
 	    eval "$openssl_dec"
 	    ;;
         s)
-	    read -p "type name: " name
-            echo "$test" | grep "^$name\ " | sed "s/^$name\ //g"
+	    read -p "search: " name
+            echo "$test" | grep "$name"
 	    ;;
 	a)
             read -p "type name: " name
