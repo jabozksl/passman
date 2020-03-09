@@ -1,15 +1,26 @@
-#!/bin/bash -l
+#!/bin/bash
 
 basename="$HOME/.passman.enc"
+test -f "$HOME/.passman.conf" && . "$HOME/.passman.conf" 2>/dev/null
 openssl_enc="openssl enc -aes256 -pbkdf2 -pass pass:\"\$p\" > $basename"
-openssl_dec="openssl enc -d -aes256 -pbkdf2 -in $basename -pass pass:\$p 2>/dev/null"
+openssl_dec="openssl enc -d -aes256 -pbkdf2 -in $basename -pass pass:\"\$p\" 2>/dev/null"
 ok='1'
+gethash(){
+	p=`echo $p | ( sha256sum || openssl sha256 -r ) | awk '{print $1}'`
+}
 readbase(){
-    while [ $ok != '0' ] ; do
+    while [ "$ok" != '0' ] ; do
         read -s -p 'password:' p
-        echo
+	echo
+	[ "$p" == "" ] && exit 0
         test=`eval "$openssl_dec"`
         ok=$?
+	# try to decode with hash
+	if [ "$ok" != "0" ]; then
+		gethash
+		test=`eval "$openssl_dec"`
+		ok=$?
+	fi
     done
 }
 makepass(){
@@ -26,6 +37,8 @@ makepass(){
 	    break
 	fi
     done
+    gethash
+    p2=""
 }
 newbase(){
     echo "Creating new database"
