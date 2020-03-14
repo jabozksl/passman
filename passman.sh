@@ -81,7 +81,7 @@ while : ; do
 	    new_master_password
             ;;
 	l|p)
-	    eval "$openssl_dec"
+	    eval "$openssl_dec" | sort
 	    ;;
         s)
 	    read -p "search: " name
@@ -97,7 +97,7 @@ while : ; do
             if [ -n "$testm" ] ; then
                 test=`echo "$test" | sed "s/^$name\ .*$/$name $s/"`
             else
-                test=`echo "$test" | sed "$ a$name $s"`
+                test=`echo -e "$test\n$name $s"`
             fi
             echo "$name $oldp > $string"
             [ -n "$test" ] && echo "$test" | eval "$openssl_enc"
