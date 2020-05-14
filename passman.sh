@@ -1,13 +1,15 @@
 #!/bin/bash
 
-basename="$HOME/.passman.enc"
+storage="$HOME/.passman.enc"
 test -f "$HOME/.passman.conf" && . "$HOME/.passman.conf" 2>/dev/null
-openssl_enc="openssl enc -aes256 -pbkdf2 -pass pass:\"\$p\" > $basename"
-openssl_dec="openssl enc -d -aes256 -pbkdf2 -in $basename -pass pass:\"\$p\" 2>/dev/null"
+openssl_enc="openssl enc -aes256 -pbkdf2 -pass pass:\"\$p\" > $storage"
+openssl_dec="openssl enc -d -aes256 -pbkdf2 -in $storage -pass pass:\"\$p\" 2>/dev/null"
 ok='1'
+
 gethash(){
 	p=`echo $p | ( sha256sum || openssl sha256 -r ) | awk '{print $1}'`
 }
+
 readbase(){
     while [ "$ok" != '0' ] ; do
         read -s -p 'password:' p
@@ -23,6 +25,7 @@ readbase(){
 	fi
     done
 }
+
 makepass(){
     ok=''
     while [ "$ok" != 'true' ] ; do
@@ -40,31 +43,51 @@ makepass(){
     gethash
     p2=""
 }
+
+confirm () {
+    echo -en "$1"
+    read -n 1 input
+    echo
+    case "$input" in
+	y|Y)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
 newbase(){
-    echo "Creating new database"
-    makepass
-    echo -n | eval "$openssl_enc"
-    test=""
+    if confirm "\e[1;33mCreate new storage file? (yes/no)\e[0m" ; then
+        makepass
+        echo -n | eval "$openssl_enc"
+        test=""
+        printhelp
+    fi
 }
+
 new_master_password(){
-    echo "Creating new password for existing database."
-    makepass
-    [ -n "$test" ] && echo "$test" | eval "$openssl_enc"
+    if confirm "\e[1;33mChange password for existing storage file? (yes/no)\e[0m" ; then
+        makepass
+        [ -n "$test" ] && echo "$test" | eval "$openssl_enc"
+    fi
 }
+
 printhelp(){
     echo "Commands:"
     echo "[h]elp"
     echo "[c]reate - create new database"
     echo "[n]ew master password"
     echo "[s]earch"
-    echo "[l]ist or [p]rint all items"
-    echo "[a]dd or change item"
-    echo "[d]elete item"
+    echo "[l]ist or [p]rint all records"
+    echo "[a]dd or change record"
+    echo "[d]elete record"
     echo "[q]uit"
     echo ""
 }
 
-test -f "$basename" && readbase || newbase
+test -f "$storage" && readbase || newbase
 printhelp
 
 while : ; do
@@ -84,31 +107,39 @@ while : ; do
 	    eval "$openssl_dec" | sort
 	    ;;
         s)
-	    read -p "search: " name
+	    read -p "Search for: " name
             echo "$test" | grep "$name"
 	    ;;
 	a)
-            read -p "type name: " name
+            read -p "Add record name: " name
             name=`echo $name | cut -d' ' -f1`
-            read -p "type key for $name: " string
+            read -p "Type key for $name: " string
             # screen '&' and '/' symbols 
             s=`echo "$string" | sed -e 's/[\&\/]/\\\&/g'`
             testm=`echo "$test" | grep "^$name "`
             if [ -n "$testm" ] ; then
-                test=`echo "$test" | sed "s/^$name\ .*$/$name $s/"`
+                if confirm "\e[1;33mAlready have record $name, replace it? (yes/no)\e[0m" ; then
+                    test=`echo "$test" | sed "s/^$name\ .*$/$name $s/"`
+                    echo "Replaced $name $oldp with $string"
+                    [ -n "$test" ] && echo "$test" | eval "$openssl_enc"
+                fi
             else
                 test=`echo -e "$test\n$name $s"`
+                echo "Added $name $string"
+                [ -n "$test" ] && echo "$test" | eval "$openssl_enc"
             fi
-            echo "$name $oldp > $string"
-            [ -n "$test" ] && echo "$test" | eval "$openssl_enc"
             ;;
 	d)
-            read -p "type name: " name
+            read -p "Delete record name: " name
             testm=`echo "$test" | grep "^$name "`
             if [ -n "$testm" ] &&  [ -n "$name" ]; then
-                test=`echo "$test" | grep -v "^$name "`
-		[ -n "$test" ] && echo "$test" | eval "$openssl_enc"
-	        echo "deleted item $name"
+                if confirm "\e[1;33mDelete record $name? (yes/no)\e[0m" ; then
+                        test=`echo "$test" | grep -v "^$name "`
+                        [ -n "$test" ] && echo "$test" | eval "$openssl_enc"
+                        echo "Deleted record $name"
+                fi
+            else
+                    echo "There is no record $name"
 	    fi
             ;;
 	q)
