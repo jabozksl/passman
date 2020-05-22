@@ -12,7 +12,7 @@ gethash(){
 
 readbase(){
     while [ "$ok" != '0' ] ; do
-        read -s -p 'password:' p
+        read -r -s -p 'password:' p
 	echo
 	[ "$p" == "" ] && exit 0
         test=`eval "$openssl_dec"`
@@ -29,10 +29,10 @@ readbase(){
 makepass(){
     ok=''
     while [ "$ok" != 'true' ] ; do
-        read -s -p 'new password:' p
+        read -r -s -p 'new password:' p
         echo
 	if [ -n "$p" ] ; then
-            read -s -p 'repeat please:' p2
+            read -r -s -p 'repeat please:' p2
             echo
             [ "$p" == "$p2" ] && ok='true' || echo "Oops, there is misprint above, please try again."
 	else
@@ -59,7 +59,7 @@ confirm () {
 }
 
 newbase(){
-    if confirm "\e[1;33mCreate new storage file? (yes/no)\e[0m" ; then
+    if confirm "\e[1;33mCreate new storage file? ([Y]es/[N]o)\e[0m" ; then
         makepass
         echo -n | eval "$openssl_enc"
         test=""
@@ -68,7 +68,7 @@ newbase(){
 }
 
 new_master_password(){
-    if confirm "\e[1;33mChange password for existing storage file? (yes/no)\e[0m" ; then
+    if confirm "\e[1;33mChange password for existing storage file? ([Y]es/[N]o)\e[0m" ; then
         makepass
         [ -n "$test" ] && echo "$test" | eval "$openssl_enc"
     fi
@@ -107,33 +107,31 @@ while : ; do
 	    eval "$openssl_dec" | sort
 	    ;;
         s)
-	    read -p "Search for: " name
+	    read -r -p "Search for: " name
             echo "$test" | grep "$name"
 	    ;;
 	a)
-            read -p "Add record name: " name
+            read -r -p "Add record name: " name
             name=`echo $name | cut -d' ' -f1`
-            read -p "Type key for $name: " string
-            # screen '&' and '/' symbols 
-            s=`echo "$string" | sed -e 's/[\&\/]/\\\&/g'`
+            read -r -p "Type key for $name: " s
             testm=`echo "$test" | grep "^$name "`
             if [ -n "$testm" ] ; then
-                if confirm "\e[1;33mAlready have record $name, replace it? (yes/no)\e[0m" ; then
+                if confirm "\e[1;33mAlready have record $name, replace it? ([Y]es/[N]o)\e[0m" ; then
                     test=`echo "$test" | sed "s/^$name\ .*$/$name $s/"`
-                    echo "Replaced $name $oldp with $string"
+                    echo "Replaced $name $oldp with $s"
                     [ -n "$test" ] && echo "$test" | eval "$openssl_enc"
                 fi
             else
                 test=`echo -e "$test\n$name $s"`
-                echo "Added $name $string"
+                echo "Added $name $s"
                 [ -n "$test" ] && echo "$test" | eval "$openssl_enc"
             fi
             ;;
 	d)
-            read -p "Delete record name: " name
+            read -r -p "Delete record name: " name
             testm=`echo "$test" | grep "^$name "`
             if [ -n "$testm" ] &&  [ -n "$name" ]; then
-                if confirm "\e[1;33mDelete record $name? (yes/no)\e[0m" ; then
+                if confirm "\e[1;33mDelete record $name? ([Y]es/[N]o)\e[0m" ; then
                         test=`echo "$test" | grep -v "^$name "`
                         [ -n "$test" ] && echo "$test" | eval "$openssl_enc"
                         echo "Deleted record $name"
