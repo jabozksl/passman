@@ -79,8 +79,8 @@ printhelp(){
     echo "[h]elp"
     echo "[c]reate - create new database"
     echo "[n]ew master password"
-    echo "[s]earch"
-    echo "[l]ist or [p]rint all records"
+    echo "[s]earch and show"
+    echo "[l]ist records with less or just [p]rint list"
     echo "[a]dd or change record"
     echo "[d]elete record"
     echo "[q]uit"
@@ -103,8 +103,11 @@ while : ; do
         n)
 	    new_master_password
             ;;
-	l|p)
-	    eval "$openssl_dec" | sort
+	l)
+	    eval "$openssl_dec" | sort | cut -d\  -f 1 | less
+	    ;;
+	p)
+	    eval "$openssl_dec" | sort | cut -d\  -f 1
 	    ;;
         s)
 	    read -r -p "Search for: " name
